@@ -4,7 +4,6 @@ import time
 
 import requests
 from requests.exceptions import ConnectionError
-from slugify import slugify
 
 from api import (
     PACKT_API_PRODUCT_FILE_DOWNLOAD_URL,
@@ -21,9 +20,19 @@ class PacktConnectionError(ConnectionError):
     pass
 
 
-def slugify_product_name(title):
-    """Return book title with spaces replaced by underscore and unicodes replaced by characters valid in filenames."""
-    return slugify(title, separator='_', lowercase=False)
+def FormatFilename(file_name):
+    """ Formats the supplied file name string removing illegal characters """
+    invalid_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
+    file_name_chars = [char for char in file_name]
+    for char in invalid_chars:
+        if char in file_name_chars:
+            if char == ':':
+                index = file_name_chars.index(':')
+                file_name_chars[index] = ' '
+                file_name_chars.insert(index + 1, '-')
+            else:
+                file_name_chars = [c for c in file_name_chars if c != char]
+    return "".join(file_name_chars)
 
 
 def wait_for_computation(predicate, timeout, retry_after):
@@ -73,7 +82,7 @@ def download_products(api_client, download_directory, formats, product_list, int
         for format, download_url in download_urls.items():
             if format in formats and not (format == 'code' and 'video' in download_urls and 'video' in formats):
                 file_extention = 'zip' if format in ('video', 'code') else format
-                file_name = slugify_product_name(book['title'])
+                file_name = FormatFilename(book['title'])
                 logger.info('Title: "{}"'.format(book['title']))
                 if into_folder:
                     target_download_path = os.path.join(download_directory, file_name)
@@ -81,7 +90,10 @@ def download_products(api_client, download_directory, formats, product_list, int
                         os.mkdir(target_download_path)
                 else:
                     target_download_path = os.path.join(download_directory)
-                full_file_path = os.path.join(target_download_path, '{}.{}'.format(file_name, file_extention))
+                if format == 'code':
+                    full_file_path = os.path.join(target_download_path, '{} [CODE].{}'.format(file_name, file_extention))
+                else:
+                    full_file_path = os.path.join(target_download_path, '{}.{}'.format(file_name, file_extention))
                 temp_file_path = os.path.join(target_download_path, 'download.tmp')
                 if os.path.isfile(full_file_path):
                     logger.info('"{}.{}" already exists under the given path.'.format(file_name, file_extention))

@@ -6,7 +6,7 @@ import sys
 from api import PacktAPIClient
 from claimer import claim_product, get_all_books_data
 from configuration import ConfigurationModel
-from downloader import download_products, slugify_product_name
+from downloader import download_products
 from utils.anticaptcha import solve_recaptcha
 from utils.logger import get_logger
 
@@ -97,7 +97,7 @@ def packt_cli(cfgpath, grab, grabd, dall, sgd, mail, status_mail, folder, noauth
             paths = [
                 os.path.join(download_directory, path)
                 for path in os.listdir(download_directory)
-                if os.path.isfile(path) and slugify_product_name(product_data['title']) in path
+                if os.path.isfile(path) and product_data['title'] in path
             ]
             if sgd:
                 from utils.google_drive import GoogleDriveManager
